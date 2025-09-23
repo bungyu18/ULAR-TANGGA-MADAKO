@@ -1,0 +1,254 @@
+/* ====== TOKO KONTROL (ubah di sini) ====== */
+:root{
+  /* Ikon judul, mode, lawan */
+  --icon-size-desktop: 500px;
+  --icon-size-mobile:  250px;
+  --icon-gap-desktop:  40px;
+  --icon-gap-mobile:   20px;
+
+  /* Papan ular tangga */
+  --board-dim: 8;                       /* 8 = 8x8 */
+  --cell-size: 75px;                    /* ukuran satu kotak (desktop) -> BESARKAN di sini */
+  --cell-gap: 2px;                      /* jarak antar sel */
+  --board-bg: url('assets/papan.png');  /* GANTI path gambar papan */
+
+  /* Token / pion */
+  --token-size-desktop: 40px;           /* BESAR pion (desktop) */
+  --token-size-mobile:  32px;           /* BESAR pion (HP) */
+  --jump-height: 18px;                  /* tinggi lompatan animasi */
+
+  /* Musik (ikon) */
+  --music-icon-size: 100px;              /* ukuran ikon musik (desktop) */
+  --music-icon-size-mobile: 100px;       /* ukuran ikon musik (HP) */
+
+  /* Skala HP */
+  --cell-size-mobile: 55px;             /* ukuran kotak saat HP */
+}
+
+/* ====== GLOBAL ====== */
+body {
+  font-family: Arial, sans-serif;
+  margin: 0; padding: 0;
+  background: url('assets/latar belakang.avif') no-repeat center center fixed;
+  background-size: cover;
+  display: flex; justify-content: center; align-items: center;
+  height: 100vh;
+}
+
+button {
+  padding: 0; margin: 10px;
+  background: transparent; border: none; cursor: pointer; outline: none; box-shadow: none;
+  transition: transform 0.2s;
+}
+button:hover { transform: scale(1.05); }
+button:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+
+/* ====== SCREEN ====== */
+.screen { display: none; flex-direction: column; align-items: center; text-align: center; }
+.screen.active { display: flex; }
+
+/* ====== LOGO & PLAY ====== */
+.logo {
+  width: 350px; max-width: 100%; height: auto; animation: pulse 2s infinite;
+}
+@keyframes pulse { 0%{transform:scale(1)} 50%{transform:scale(1.1)} 100%{transform:scale(1)} }
+
+.play-button { width: 150px; height: auto; margin-top: 20px; animation: bounce 1.5s infinite; }
+@keyframes bounce {
+  0%,20%,50%,80%,100% { transform: translateY(0); }
+  40% { transform: translateY(-10px); }
+  60% { transform: translateY(-5px); }
+}
+
+/* ====== NAV BUTTONS (Back) ====== */
+.nav-buttons {
+  position: absolute; top: 10px; width: 100%;
+  display: flex; justify-content: flex-start;
+  padding: 0 20px; box-sizing: border-box;
+}
+.nav-buttons img { width: 48px; height: 48px; transition: transform .2s; }
+.nav-buttons button:hover img { transform: scale(1.15); }
+
+/* ====== TITLE (gambar judul) ====== */
+h2 { margin: 0; padding: 0; }
+.pilih-mode-title,
+.pilih-lawan-title {
+  width: var(--icon-size-desktop);
+  max-width: 100%; height: auto; display: block;
+  margin-bottom: 40px; /* jarak ke tombol di bawahnya */
+}
+
+/* ====== MODE BUTTONS (Single / Multi) ====== */
+.mode-buttons {
+  display: flex; justify-content: center; align-items: center;
+  gap: var(--icon-gap-desktop); flex-wrap: wrap; margin-top: 20px;
+}
+.mode-btn { display: flex; flex-direction: column; align-items: center; padding: 10px; background: transparent; border: none; cursor: pointer; }
+.mode-btn img {
+  width: var(--icon-size-desktop); max-width: 100%; height: auto; display: block; transition: transform .2s;
+}
+.mode-btn:hover img { transform: scale(1.08); }
+
+/* ====== LAWAN BUTTONS ====== */
+.lawan-buttons {
+  display: flex; justify-content: center; align-items: center;
+  gap: var(--icon-gap-desktop); margin-top: 20px; flex-wrap: wrap;
+}
+.lawan-btn { display: flex; flex-direction: column; align-items: center; background: transparent; border: none; cursor: pointer; padding: 10px; transition: transform .2s; }
+.lawan-btn img {
+  width: var(--icon-size-desktop); max-width: 100%; height: auto; margin-bottom: 8px; transition: transform .2s;
+}
+.lawan-btn:hover img { transform: scale(1.08); }
+.lawan-btn span { color: #fff; font-weight: bold; font-size: 14px; }
+
+/* ====== BOARD (Ular Tangga) ====== */
+.board {
+  /* hitung lebar/tinggi total: (dim * size) + ((dim-1) * gap) */
+  --board-size-px: calc(var(--board-dim) * var(--cell-size) + (var(--board-dim) - 1) * var(--cell-gap));
+
+  position: relative;
+  width: var(--board-size-px);
+  height: var(--board-size-px);
+
+  display: grid;
+  grid-template-columns: repeat(var(--board-dim), var(--cell-size));
+  grid-template-rows:    repeat(var(--board-dim), var(--cell-size));
+  gap: var(--cell-gap);
+  margin: 20px;
+
+  /* BACKGROUND GAMBAR PAPAN */
+  background-image: var(--board-bg);
+  background-size: cover;        /* ganti ke 'contain' jika mau gambar utuh */
+  background-position: center;
+  background-repeat: no-repeat;
+
+  overflow: hidden; /* jaga gambar/overlay tetap di dalam */
+  z-index: 0;
+}
+
+/* Sel transparan agar gambar papan terlihat */
+.cell {
+  width: var(--cell-size);
+  height: var(--cell-size);
+  background: transparent; /* transparan agar BG papan terlihat */
+  border: 1px solid rgba(0,0,0,.15);
+  display: flex; align-items: center; justify-content: center;
+  position: relative;
+  font-size: 12px; font-weight: 600;
+  color: transparent; /* sembunyikan nomor; ganti ke #222 kalau mau terlihat */
+}
+
+/* ====== TOKEN (gambar pion dengan animasi loncat) ====== */
+.token-wrap {
+  position: absolute;
+  width: var(--token-size-desktop);
+  height: var(--token-size-desktop);
+  transition: transform 420ms cubic-bezier(.2,.8,.2,1);
+  will-change: transform;
+  pointer-events: none;
+  z-index: 3; /* di atas sel */
+}
+
+.token-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain; /* tampilkan gambar utuh */
+  display: block;
+}
+
+.token-jump { animation: jump-arc 420ms ease-out; }
+
+@keyframes jump-arc {
+  0%   { transform: translateY(0); }
+  50%  { transform: translateY(calc(var(--jump-height) * -1)); }
+  100% { transform: translateY(0); }
+}
+
+/* SVG overlay untuk ular/tangga (kalau dipakai) */
+.board svg.overlay {
+  position: absolute; left: 0; top: 0; width: 100%; height: 100%;
+  pointer-events: none; z-index: 2;
+}
+
+/* ====== DICE VIEW ====== */
+.dice-view {
+  display: flex; justify-content: center; align-items: center;
+  margin-top: 8px; min-height: 56px; /* jaga ruang agar tata letak stabil */
+}
+#diceIcon {
+  width: 80px; height: 80px; object-fit: contain;
+  animation: none;
+}
+#diceIcon.spin { animation: dice-spin 300ms linear; }
+@keyframes dice-spin { from { transform: rotate(0); } to { transform: rotate(360deg); } }
+
+/* ====== QUIZ BOX ====== */
+.quiz-box {
+  position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+  background: white; border: 2px solid #444; padding: 20px; text-align: center;
+}
+.hidden { display: none; }
+
+/* ====== KONTROL MUSIK (pojok kanan atas, IKON) ====== */
+.music-controls{
+  position: fixed; top: 10px; right: 10px;
+  display: flex; align-items: center; gap: 8px;
+  background: rgba(0,0,0,.4); padding: 6px 10px; border-radius: 8px;
+  z-index: 9999; backdrop-filter: blur(2px);
+}
+.music-controls button{
+  background: transparent; border:none; padding:0; margin:0; cursor:pointer;
+  display: inline-flex; align-items: center; justify-content: center;
+  transition: transform .15s ease;
+}
+.music-controls button:hover{ transform: scale(1.06); }
+.music-controls button:focus-visible{ outline:2px solid #fff; outline-offset:2px; }
+
+#bgmIcon{
+  width: var(--music-icon-size);
+  height: var(--music-icon-size);
+  display: block;
+  object-fit: contain;
+  filter: drop-shadow(0 1px 1px rgba(0,0,0,.35));
+}
+
+.music-controls input[type="range"]{
+  accent-color:#ff4444; cursor:pointer;
+  width: 110px; height: 4px;
+}
+
+/* ====== RESPONSIVE (HP) ====== */
+@media (max-width: 768px) {
+  .logo { width: 250px; }
+  .play-button { width: 120px; }
+
+  .pilih-mode-title, .pilih-lawan-title { width: var(--icon-size-mobile); }
+  .mode-btn img, .lawan-btn img { width: var(--icon-size-mobile); }
+  .mode-buttons, .lawan-buttons { gap: var(--icon-gap-mobile); }
+
+  /* Kecilkan papan di HP dengan mengecilkan cell */
+  .board {
+    --cell-size: var(--cell-size-mobile);
+    --board-size-px: calc(var(--board-dim) * var(--cell-size) + (var(--board-dim) - 1) * var(--cell-gap));
+    width: var(--board-size-px);
+    height: var(--board-size-px);
+  }
+
+  /* Kecilkan pion di HP */
+  .token-wrap {
+    width: var(--token-size-mobile);
+    height: var(--token-size-mobile);
+  }
+
+  /* Musik: ikon & padding lebih kecil */
+  .music-controls{
+    top: 8px; right: 8px; padding: 6px;
+  }
+  #bgmIcon{
+    width: var(--music-icon-size-mobile);
+    height: var(--music-icon-size-mobile);
+  }
+  .music-controls input[type="range"]{
+    width: 90px;
+  }
+}
