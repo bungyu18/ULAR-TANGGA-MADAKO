@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Game Ular Tangga Kuis</title>
+
+  <!-- Styles utama -->
+  <link rel="stylesheet" href="style.css" />
+
+  <!-- (opsional) styling kecil tombol back + musik -->
+  <style>
+    .nav-buttons {
+      position: absolute; top: 10px; width: 100%;
+      display: flex; justify-content: flex-start;
+      padding: 0 20px; box-sizing: border-box;
+    }
+    .nav-buttons button { background: transparent; border: none; cursor: pointer; transition: transform .2s; }
+    .nav-buttons img { width: 48px; height: 48px; }
+    .nav-buttons button:hover { transform: scale(1.1); }
+
+    /* Kontrol musik pojok kanan atas */
+    .music-controls{
+      position: fixed; top: 30px; right: 70px;
+      display: flex; align-items: center; gap: 8px;
+      background: rgba(0,0,0,.4); padding: 6px 10px; border-radius: 8px;
+      z-index: 9999;
+    }
+    .music-controls button{
+      background: transparent; border:none; padding:0; cursor:pointer;
+      display: inline-flex; align-items: center; justify-content: center;
+    }
+    #bgmIcon{ width: 28px; height: 28px; display:block; object-fit: contain; }
+    .music-controls input[type="range"]{ accent-color:#ff4444; cursor:pointer; }
+  </style>
+</head>
+<body>
+
+  <!-- ===== Kontrol Musik (pojok kanan atas) ===== -->
+<div class="music-controls" aria-label="Kontrol Musik">
+  <button id="bgmToggle" type="button" aria-label="Toggle Musik">
+    <img id="bgmIcon" src="assets/on.png" alt="Musik ON" />
+  </button>
+</div>
+
+
+
+  <!-- ===== Menu Awal ===== -->
+  <div id="menuAwal" class="screen active" data-next="menuMode">
+    <img src="assets/logo.png" alt="Logo Game" class="logo" />
+    <button id="playBtn" class="play-btn" aria-label="Mulai">
+      <img src="assets/play.png" class="play-button" alt="Tombol Mulai" />
+    </button>
+  </div>
+
+  <!-- ===== Menu Pilih Mode ===== -->
+  <div id="menuMode" class="screen" data-prev="menuAwal" data-next="menuLawan">
+    <div class="nav-buttons">
+      <button onclick="goBack(this)" aria-label="Kembali"><img src="assets/back.png" alt="Kembali" /></button>
+    </div>
+
+    <h2>
+      <img src="assets/pilihmode.png" alt="Pilih Mode" class="pilih-mode-title" />
+    </h2>
+
+    <div class="mode-buttons">
+      <button class="mode-btn" onclick="selectMode('single')" aria-label="Mode Single Player">
+        <img src="assets/single.png" alt="Single Player"/>
+      </button>
+      <button class="mode-btn" onclick="selectMode('multi')" aria-label="Mode Multiplayer">
+        <img src="assets/multi.png" alt="Multiplayer"/>
+      </button>
+    </div>
+  </div>
+
+  <!-- ===== Menu Pilih Lawan ===== -->
+  <div id="menuLawan" class="screen" data-prev="menuMode" data-next="menuPemain">
+    <div class="nav-buttons">
+      <button onclick="goBack(this)" aria-label="Kembali"><img src="assets/back.png" alt="Kembali" /></button>
+    </div>
+
+    <h2>
+      <img src="assets/pilihlawan.png" alt="Pilih Lawan" class="pilih-lawan-title" />
+    </h2>
+
+    <div class="lawan-buttons">
+      <button class="lawan-btn" onclick="selectOpponent('komputer')" aria-label="Lawan Komputer">
+        <img src="assets/manusia vs komputer.png" alt="Manusia vs Komputer"/>
+      </button>
+      <button class="lawan-btn" onclick="selectOpponent('player')" aria-label="Lawan Pemain">
+        <img src="assets/manusia vs manusia.png" alt="Manusia vs Manusia"/>
+      </button>
+    </div>
+  </div>
+
+  <!-- ===== Menu Pilih Pemain ===== -->
+  <div id="menuPemain" class="screen" data-prev="menuLawan">
+    <div class="nav-buttons">
+      <button onclick="goBack(this)" aria-label="Kembali"><img src="assets/back.png" alt="Kembali" /></button>
+    </div>
+
+    <h2>Masukkan Nama Pemain</h2>
+    <label for="playerCount">Jumlah Pemain (2–4):</label>
+    <input type="number" id="playerCount" min="2" max="4" value="2" />
+    <div id="playerInputs">
+      <input type="text" id="player1" placeholder="Nama Pemain 1" />
+      <input type="text" id="player2" placeholder="Nama Pemain 2" />
+    </div>
+    <button onclick="startGame()">Mulai Game</button>
+  </div>
+
+  <!-- ===== Game Board ===== -->
+  <div id="gameBoard" class="screen">
+    <div id="board" class="board"></div>
+
+    <div id="controls" style="text-align:center;">
+      <p id="turnInfo"></p>
+
+      <!-- Tombol Lempar -->
+      <button id="rollDiceBtn">Lempar Dadu</button>
+
+      <!-- Ikon dadu + hasil angka -->
+      <div class="dice-view">
+        <img id="diceIcon" src="assets/d1.png" alt="Ikon dadu" />
+      </div>
+      <p id="diceResult"></p>
+    </div>
+  </div>
+
+  <!-- ===== Kuis ===== -->
+  <div id="quizBox" class="quiz-box hidden" role="dialog" aria-modal="true" aria-labelledby="quizQuestion">
+    <p id="quizQuestion"></p>
+    <div id="quizOptions"></div>
+  </div>
+
+  <!-- ===== Audio Elements ===== -->
+  <audio id="bgm"     src="assets/audio/latarbelakang.mp3" preload="auto" loop></audio>
+  <audio id="sfxDice" src="assets/audio/dadu.mp3"           preload="auto"></audio>
+  <audio id="sfxUp"   src="assets/audio/naik.mp3"           preload="auto"></audio>
+  <audio id="sfxDown" src="assets/audio/turun.mp3"          preload="auto"></audio>
+
+  <script>
+    // Navigasi antar layar
+    document.getElementById("playBtn").addEventListener("click", () => { goTo("menuMode"); });
+    function goTo(id){ document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active")); document.getElementById(id).classList.add("active"); }
+    function goBack(btn){ const current=btn.closest(".screen"); const prevId=current.getAttribute("data-prev"); if(prevId) goTo(prevId); }
+
+    // Input jumlah pemain dinamis (clamp ke 4)
+    document.getElementById("playerCount").addEventListener("input", function () {
+      const count = Math.max(2, Math.min(4, parseInt(this.value) || 2));
+      const container = document.getElementById("playerInputs");
+      container.innerHTML = "";
+      for (let i = 1; i <= count; i++) {
+        const input = document.createElement("input");
+        input.type = "text"; input.id = `player${i}`; input.placeholder = `Nama Pemain ${i}`;
+        container.appendChild(input);
+      }
+    });
+
+    // ====== Setup kontrol musik (ikon) ======
+    (function setupBgmControls(){
+      const bgm        = document.getElementById('bgm');
+      const btnToggle  = document.getElementById('bgmToggle');
+      const icon       = document.getElementById('bgmIcon');
+      const volSlider  = document.getElementById('bgmVolume');
+
+      // Set ikon sesuai status saat ini
+      const setIcon = () => {
+        if (bgm.paused) {
+          icon.src = 'assets/off.png';
+          icon.alt = 'Musik OFF';
+          btnToggle.setAttribute('aria-label','Musik OFF');
+        } else {
+          icon.src = 'assets/on.png';
+          icon.alt = 'Musik ON';
+          btnToggle.setAttribute('aria-label','Musik ON');
+        }
+      };
+
+      // Autoplay setelah interaksi pertama (kebijakan browser)
+      const unlock = () => {
+        if (bgm.dataset.started) return;
+        bgm.volume = parseFloat(volSlider.value || '0.6');
+        bgm.play().catch(()=>{ /* jika diblokir browser */ });
+        bgm.dataset.started = '1';
+        setIcon();
+        window.removeEventListener('click', unlock);
+      };
+      window.addEventListener('click', unlock, { once:true });
+
+      // Toggle ON/OFF via ikon
+      btnToggle.addEventListener('click', () => {
+        if (bgm.paused) { bgm.play().catch(()=>{}); } else { bgm.pause(); }
+        setIcon();
+      });
+
+      // Volume
+      volSlider.addEventListener('input', (e) => {
+        const v = parseFloat(e.target.value);
+        bgm.volume = isNaN(v) ? 0.6 : v;
+      });
+
+      // sinkronkan ikon saat media berubah
+      bgm.addEventListener('play', setIcon);
+      bgm.addEventListener('pause', setIcon);
+
+      // set awal (kalau sudah auto-play oleh browser)
+      setIcon();
+    })();
+  </script>
+
+  <!-- Logic utama game -->
+  <script src="script.js"></script>
+</body>
+</html>
