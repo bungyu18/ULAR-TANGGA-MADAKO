@@ -37,6 +37,7 @@ const DICE_ICONS = {
   6: "assets/d6.png",
 };
 
+
 // ====== AUDIO HELPERS ======
 function playSfxById(id, volume = 1) {
   const el = document.getElementById(id);
