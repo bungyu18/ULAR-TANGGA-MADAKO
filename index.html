@@ -2,7 +2,8 @@
 <html lang="id">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+
   <title>Game Ular Tangga Kuis</title>
 
   <!-- Styles utama -->
@@ -37,13 +38,13 @@
 <body>
 
   <!-- ===== Kontrol Musik (pojok kanan atas) ===== -->
-<div class="music-controls" aria-label="Kontrol Musik">
-  <button id="bgmToggle" type="button" aria-label="Toggle Musik">
-    <img id="bgmIcon" src="assets/on.png" alt="Musik ON" />
-  </button>
-</div>
-
-
+  <div class="music-controls" aria-label="Kontrol Musik">
+    <button id="bgmToggle" type="button" aria-label="Toggle Musik">
+      <img id="bgmIcon" src="assets/on.png" alt="Musik ON" />
+    </button>
+    <!-- DITAMBAHKAN: slider volume -->
+    <input id="bgmVolume" type="range" min="0" max="1" step="0.01" value="0.6" aria-label="Volume Musik" />
+  </div>
 
   <!-- ===== Menu Awal ===== -->
   <div id="menuAwal" class="screen active" data-next="menuMode">
@@ -94,38 +95,48 @@
   </div>
 
   <!-- ===== Menu Pilih Pemain ===== -->
-  <div id="menuPemain" class="screen" data-prev="menuLawan">
-    <div class="nav-buttons">
-      <button onclick="goBack(this)" aria-label="Kembali"><img src="assets/back.png" alt="Kembali" /></button>
-    </div>
-
-    <h2>Masukkan Nama Pemain</h2>
-    <label for="playerCount">Jumlah Pemain (2–4):</label>
-    <input type="number" id="playerCount" min="2" max="4" value="2" />
-    <div id="playerInputs">
-      <input type="text" id="player1" placeholder="Nama Pemain 1" />
-      <input type="text" id="player2" placeholder="Nama Pemain 2" />
-    </div>
-    <button onclick="startGame()">Mulai Game</button>
+ <div id="menuPemain" class="screen" data-prev="menuLawan">
+  <div class="nav-buttons">
+    <button onclick="goBack(this)" aria-label="Kembali"><img src="assets/back.png" alt="Kembali" /></button>
   </div>
+
+  <h2>
+    <img src="assets/masukkan nama pemain.png" alt="Ikon Pemain" class="player-icon" />
+  </h2>
+
+  <label for="playerCount">Jumlah Pemain (2–4):</label>
+  <input type="number" id="playerCount" min="2" max="4" value="2" />
+
+  <div id="playerInputs">
+    <input type="text" id="player1" placeholder="Nama Pemain 1" />
+    <input type="text" id="player2" placeholder="Nama Pemain 2" />
+  </div>
+
+  <button class="start-btn" onclick="startGame()">
+  <img src="assets/MULAI GAME.png" alt="Ikon Mulai Game" class="start-icon" />
+</button>
+</div>
 
   <!-- ===== Game Board ===== -->
-  <div id="gameBoard" class="screen">
-    <div id="board" class="board"></div>
+  <div id="gameBoard" class="screen game-layout">
+  <!-- Panel kiri: Giliran -->
+  <aside id="leftPanel">
+    <p id="turnInfo"></p>
+  </aside>
 
-    <div id="controls" style="text-align:center;">
-      <p id="turnInfo"></p>
+  <!-- Papan di tengah -->
+  <div id="board" class="board"></div>
 
-      <!-- Tombol Lempar -->
-      <button id="rollDiceBtn">Lempar Dadu</button>
-
-      <!-- Ikon dadu + hasil angka -->
-      <div class="dice-view">
-        <img id="diceIcon" src="assets/d1.png" alt="Ikon dadu" />
-      </div>
-      <p id="diceResult"></p>
+  <!-- Panel kanan: Dadu + tombol -->
+  <aside id="rightPanel">
+    <div class="dice-view">
+      <img id="diceIcon" src="assets/d1.png" alt="Ikon dadu" />
     </div>
-  </div>
+    <button id="rollDiceBtn">Lempar Dadu</button>
+    <p id="diceResult"></p>
+  </aside>
+</div>
+
 
   <!-- ===== Kuis ===== -->
   <div id="quizBox" class="quiz-box hidden" role="dialog" aria-modal="true" aria-labelledby="quizQuestion">
@@ -156,6 +167,30 @@
         container.appendChild(input);
       }
     });
+
+    <!-- ===== Hasil Permainan ===== -->
+<div id="resultScreen" class="screen" data-prev="gameBoard">
+  <h2 style="color:#fff;margin-bottom:12px;">Hasil Permainan</h2>
+
+  <table class="result-table" id="resultTable">
+    <thead>
+      <tr>
+        <th>Pemain</th>
+        <th>Benar</th>
+        <th>Salah</th>
+        <th>Poin</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+  <div class="result-actions">
+    <button onclick="goTo('menuAwal')">Home</button>
+    <button onclick="startGame()">Main Lagi</button>
+  </div>
+</div>
+
+
 
     // ====== Setup kontrol musik (ikon) ======
     (function setupBgmControls(){
@@ -208,6 +243,9 @@
       setIcon();
     })();
   </script>
+
+  <!-- Muat data kuis (NON-MODULE) sebelum logic game -->
+  <script src="quizdata.js?v=2"></script>
 
   <!-- Logic utama game -->
   <script src="script.js"></script>
