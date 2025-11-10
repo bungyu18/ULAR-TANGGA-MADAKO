@@ -1,42 +1,50 @@
-/* ====== TOKO KONTROL (ubah di sini) ====== */
+/* ================================
+   KENDALI UKURAN (ubah cepat di sini)
+   ================================ */
 :root{
-  /* Ikon judul, mode, lawan */
+  /* Ikon judul (Pilih Mode, Pilih Lawan, Masukkan Nama Pemain) */
   --icon-size-desktop: 500px;
-  --icon-size-mobile:  250px;
+  --icon-size-mobile:  260px;
   --icon-gap-desktop:  40px;
   --icon-gap-mobile:   20px;
 
+  /* Tombol menu & lawan (seragam) */
+  --menu-btn-w-desktop: 380px;
+  --menu-btn-h-desktop: 160px;
+  --menu-btn-w-mobile:  260px;
+  --menu-btn-h-mobile:  120px;
+
   /* Papan ular tangga */
   --board-dim: 8;                       /* 8 = 8x8 */
-  --cell-size: 75px;                    /* ukuran satu kotak (desktop) */
+  --cell-size: 75px;                    /* ukuran sel desktop */
+  --cell-size-mobile: 55px;             /* ukuran sel HP */
   --cell-gap: 2px;                      /* jarak antar sel */
-  --board-bg: url('assets/papan.png');  /* GANTI path gambar papan */
+  --board-bg: url('assets/papan.png');  /* ganti path papan */
 
   /* Token / pion */
   --token-size-desktop: 40px;
   --token-size-mobile:  32px;
   --jump-height: 18px;
 
-  /* Musik (ikon) — BEBAS DIUBAH */
-  --music-icon-size: 250px;             /* desktop */
-  --music-icon-size-mobile: 250px;      /* mobile */
-
-  /* Dadu (ikon) — BEBAS DIUBAH */
+  /* Dadu (ikon) */
   --dice-size-desktop: 200px;
   --dice-size-mobile: 100px;
 
-  /* Skala HP */
-  --cell-size-mobile: 55px;
+  /* Musik (ikon) */
+  --music-icon-size: 64px;
+  --music-icon-size-mobile: 40px;
 }
 
-/* ====== GLOBAL ====== */
+/* ========== GLOBAL ========== */
+* { box-sizing: border-box; }
+html, body { height: 100%; }
 body {
   font-family: Arial, sans-serif;
   margin: 0; padding: 0;
   background: url('assets/latar belakang.avif') no-repeat center center fixed;
   background-size: cover;
   display: flex; justify-content: center; align-items: center;
-  height: 100vh;
+  min-height: 100vh;
 }
 
 button {
@@ -47,58 +55,103 @@ button {
 button:hover { transform: scale(1.05); }
 button:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
 
-/* ====== SCREEN ====== */
-.screen { display: none; flex-direction: column; align-items: center; text-align: center; }
-.screen.active { display: flex; }
-
-/* ====== LOGO & PLAY ====== */
-.logo {
-  width: 350px; max-width: 100%; height: auto; animation: pulse 2s infinite;
+/* ========== SCREEN CONTAINER ========== */
+.screen {
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  min-height: 100vh;
+  width: 100%;
 }
-@keyframes pulse { 0%{transform:scale(1)} 50%{transform:scale(1.1)} 100%{transform:scale(1)} }
+.screen.active { display: flex; }
+#menuAwal, #menuMode, #menuLawan, #menuPemain, #gameBoard {
+  justify-content: center; /* vertikal tengah */
+  align-items: center;     /* horizontal tengah */
+}
 
-.play-button { width: 150px; height: auto; margin-top: 20px; animation: bounce 1.5s infinite; }
+/* ========== LOGO & PLAY ========== */
+.logo {
+  width: 330px; max-width: 100%; height: auto; animation: pulse 2s infinite;
+}
+@keyframes pulse { 0%{transform:scale(1)} 50%{transform:scale(1.05)} 100%{transform:scale(1)} }
+
+.play-button {
+  width: 150px; height: auto; margin-top: 20px; animation: bounce 1.5s infinite;
+}
 @keyframes bounce {
   0%,20%,50%,80%,100% { transform: translateY(0); }
   40% { transform: translateY(-10px); }
-  60% { transform: translateY(-5px); }
+  60% { transform: translateY(-6px); }
 }
 
-/* ====== NAV BUTTONS (Back) ====== */
+/* ========== NAV BUTTONS (Back) ========== */
 .nav-buttons {
   position: absolute;
-  top: 4px;           /* turun sedikit (dulu 10px) */
-  left: 50px;          /* geser kanan dari tepi */
+  top: 8px;
+  left: 16px;
   display: flex;
   justify-content: flex-start;
-  box-sizing: border-box;
+  align-items: center;
+  gap: 8px;
+  z-index: 20;
 }
-
 .nav-buttons img { width: 48px; height: 48px; transition: transform .2s; }
 .nav-buttons button:hover img { transform: scale(1.15); }
 
-/* ====== TITLE (gambar judul) ====== */
+/* ========== IKON JUDUL SERAGAM ========== */
 h2 { margin: 0; padding: 0; }
+
+/* Terapkan ke SEMUA header image:
+   - .pilih-mode-title
+   - .pilih-lawan-title
+   - .player-icon (Masukkan Nama Pemain) */
 .pilih-mode-title,
-.pilih-lawan-title {
+.pilih-lawan-title,
+.player-icon {
   width: var(--icon-size-desktop);
-  max-width: 100%; height: auto; display: block;
-  margin-bottom: 40px;
+  max-width: 100%;
+  height: auto;
+  display: block;
+  margin-bottom: 24px;
 }
 
-/* ====== MODE & LAWAN BUTTONS ====== */
-.mode-buttons, .lawan-buttons {
-  display: flex; justify-content: center; align-items: center;
-  gap: var(--icon-gap-desktop); flex-wrap: wrap; margin-top: 20px;
+/* ========== TOMBOL MENU & LAWAN SERAGAM ========== */
+.mode-buttons,
+.lawan-buttons {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: var(--icon-gap-desktop);
+  flex-wrap: wrap;
+  margin-top: 10px;
 }
-.mode-btn, .lawan-btn { display: flex; flex-direction: column; align-items: center; padding: 10px; background: transparent; border: none; cursor: pointer; }
-.mode-btn img, .lawan-btn img {
-  width: var(--icon-size-desktop); max-width: 100%; height: auto; display: block; transition: transform .2s;
-}
-.mode-btn:hover img, .lawan-btn:hover img { transform: scale(1.08); }
-.lawan-btn span { color: #fff; font-weight: bold; font-size: 14px; }
 
-/* ====== BOARD (Ular Tangga) ====== */
+.mode-btn,
+.lawan-btn {
+  width: var(--menu-btn-w-desktop);
+  height: var(--menu-btn-h-desktop);
+  padding: 0;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.mode-btn img,
+.lawan-btn img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+  transition: transform .2s;
+}
+.mode-btn:hover img,
+.lawan-btn:hover img { transform: scale(1.05); }
+
+/* ========== PAPAN (Ular Tangga) ========== */
 .board {
   --board-size-px: calc(var(--board-dim) * var(--cell-size) + (var(--board-dim) - 1) * var(--cell-gap));
   position: relative;
@@ -119,7 +172,7 @@ h2 { margin: 0; padding: 0; }
   z-index: 0;
 }
 
-/* Kotak papan: kini siap menerima background-image dari JS */
+/* Sel papan */
 .cell {
   width: var(--cell-size);
   height: var(--cell-size);
@@ -129,14 +182,12 @@ h2 { margin: 0; padding: 0; }
   position: relative;
   font-size: 12px; font-weight: 600;
   color: transparent;  /* ubah ke #222 bila ingin angka terlihat */
-
-  /* AGAR GAMBAR KOTAK TAMPIL SEMPURNA */
-  background-size: cover;          /* ganti ke contain bila perlu utuh */
+  background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
 }
 
-/* ====== TOKEN (gambar pion dengan animasi loncat) ====== */
+/* ========== TOKEN (pion) ========== */
 .token-wrap {
   position: absolute;
   width: var(--token-size-desktop);
@@ -159,11 +210,11 @@ h2 { margin: 0; padding: 0; }
   100% { transform: translateY(0); }
 }
 
-/* ====== DICE VIEW (kanan-tengah) ====== */
+/* ========== DADU (kanan-tengah) ========== */
 .dice-view {
   position: fixed;
-  top: 50%;            /* ====== Atas/bawah====== */
-  right: 150px;        /* ======Kanan/kiri====== */
+  top: 50%;
+  right: 150px;
   transform: translateY(-50%);
   display: flex; justify-content: center; align-items: center;
   min-width: var(--dice-size-desktop);
@@ -176,26 +227,54 @@ h2 { margin: 0; padding: 0; }
   height: var(--dice-size-desktop);
   object-fit: contain;
   animation: none;
-  pointer-events: auto; /* kalau mau bisa diklik, ubah di sini */
+  pointer-events: auto; /* jika ingin bisa diklik */
 }
 #diceIcon.spin { animation: dice-spin 300ms linear; }
 @keyframes dice-spin { from { transform: rotate(0); } to { transform: rotate(360deg); } }
 
-/* ====== QUIZ BOX ====== */
-.quiz-box {
-  position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
-  background: white; border: 2px solid #444; padding: 20px; text-align: center;
-}
+/* ========== KOTAK KUIS ========== */
 .hidden { display: none; }
 
-/* ====== KONTROL MUSIK (pojok kanan atas, hanya ikon) ====== */
+.quiz-box {
+  position: fixed;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  background: #fff; color: #111;
+  width: min(90vw, 640px);
+  max-height: 80vh;
+  overflow: auto;
+  padding: 16px 18px;
+  border: 2px solid #444; border-radius: 12px;
+  box-shadow: 0 12px 32px rgba(0,0,0,.35);
+  z-index: 10001; /* di atas dadu & ikon musik */
+}
+#quizOptions {
+  display: grid; gap: 10px; margin-top: 12px;
+}
+#quizOptions button,
+#quizOptions .quiz-option {
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid #ddd;
+  background: #fff;
+  color: #111;
+  cursor: pointer;
+  text-align: left;
+}
+#quizOptions .quiz-option.correct { border-color: #2ecc71; }
+#quizOptions .quiz-option.wrong   { border-color: #e74c3c; }
+
+/* ========== KONTROL MUSIK (pojok kanan atas) ========== */
 .music-controls {
   position: fixed;
-  top: 30px;    /* turun dari 10px → 30px */
-  right: 10px;  /* tetap mepet kanan */
+  top: 30px;
+  right: 10px;
   z-index: 9999;
+  background: rgba(0,0,0,.35);
+  padding: 6px 8px;
+  border-radius: 10px;
+  display: flex; align-items: center; gap: 8px;
 }
-
 .music-controls button {
   background: transparent;
   border: none;
@@ -203,32 +282,35 @@ h2 { margin: 0; padding: 0; }
   margin: 0;
   cursor: pointer;
 }
-
 #bgmIcon {
-  width: 64px;   /* atur ukuran ikon musik di sini */
-  height: 64px;
+  width: var(--music-icon-size);
+  height: var(--music-icon-size);
   object-fit: contain;
   display: block;
 }
 
-
-/* (opsional) kalau masih ada slider volume di HTML, tetap aman */
-/*
-.music-controls input[type="range"]{
-  accent-color:#ff4444; cursor:pointer;
-  width: 110px; height: 4px;
-}
-*/
-
-/* ====== RESPONSIVE (HP) ====== */
+/* ========== RESPONSIVE (HP) ========== */
 @media (max-width: 768px) {
-  .logo { width: 250px; }
-  .play-button { width: 120px; }
+  /* Logo & Play auto-scale */
+  .logo { width: 60vw; max-width: 320px; }
+  .play-button { width: 40vw; max-width: 200px; }
 
-  .pilih-mode-title, .pilih-lawan-title { width: var(--icon-size-mobile); }
-  .mode-btn img, .lawan-btn img { width: var(--icon-size-mobile); }
+  /* Ikon judul seragam */
+  .pilih-mode-title,
+  .pilih-lawan-title,
+  .player-icon {
+    width: var(--icon-size-mobile);
+    margin-bottom: 16px;
+  }
+
+  /* Tombol menu & lawan seragam (pakai variabel mobile) */
   .mode-buttons, .lawan-buttons { gap: var(--icon-gap-mobile); }
+  .mode-btn, .lawan-btn {
+    width: var(--menu-btn-w-mobile);
+    height: var(--menu-btn-h-mobile);
+  }
 
+  /* Papan pas di layar HP */
   .board {
     --cell-size: var(--cell-size-mobile);
     --board-size-px: calc(var(--board-dim) * var(--cell-size) + (var(--board-dim) - 1) * var(--cell-gap));
@@ -236,18 +318,13 @@ h2 { margin: 0; padding: 0; }
     height: var(--board-size-px);
   }
 
+  /* Token (pion) lebih kecil */
   .token-wrap {
     width: var(--token-size-mobile);
     height: var(--token-size-mobile);
   }
 
-  .music-controls{ top: 8px; right: 8px; padding: 6px; }
-
-  #bgmIcon{
-    width: var(--music-icon-size-mobile);
-    height: var(--music-icon-size-mobile);
-  }
-
+  /* Dadu lebih kecil & mepet kanan */
   .dice-view{
     right: 10px;
     min-width: var(--dice-size-mobile);
@@ -257,4 +334,160 @@ h2 { margin: 0; padding: 0; }
     width: var(--dice-size-mobile);
     height: var(--dice-size-mobile);
   }
+
+  /* Ikon musik lebih kecil */
+  .music-controls { top: 8px; right: 8px; padding: 6px; }
+  #bgmIcon {
+    width: var(--music-icon-size-mobile);
+    height: var(--music-icon-size-mobile);
+  }
+
+  /* Kuis pas di HP */
+  .quiz-box {
+    width: calc(100vw - 24px);
+    max-height: 80vh;
+    padding: 16px;
+  }
 }
+
+/* ====== FORM INPUT PEMAIN ====== */
+#menuPemain label {
+  display: block;
+  font-size: 18px;
+  color: #fff;
+  margin-bottom: 8px;   /* jarak antara tulisan dan input */
+}
+
+#playerCount {
+  margin-bottom: 16px;  /* jarak ke bawah (ke input berikutnya) */
+  padding: 6px 8px;
+  font-size: 16px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  text-align: center;
+}
+
+/* Biar input nama rapi dan konsisten */
+#playerInputs {
+  display: grid;
+  gap: 0px;
+  margin-top: 8px;
+}
+#playerInputs input[type="text"] {
+  width: min(90vw, 360px);
+  padding: 10px 12px;
+  font-size: 16px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+}
+
+/* ====== TOMBOL MULAI GAME (ikon saja, tanpa background) ====== */
+.start-btn {
+  background: transparent;
+  border: none;
+  padding: 0;
+  margin-top: 16px;
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+.start-btn:hover { transform: scale(1.08); }
+.start-btn:active { transform: scale(0.96); }
+
+.start-icon {
+  width: 380px;   /* sama ukuran dengan tombol mode/lawan */
+  height: auto;
+  display: block;
+  object-fit: contain;
+}
+
+/* versi mobile */
+@media (max-width: 768px) {
+  .start-icon {
+    width: 260px;  /* sama ukuran dengan versi mobile tombol lain */
+  }
+}
+
+/* ====== Posisi teks Giliran ====== */
+#leftPanel {
+  position: absolute;
+  left: 40px;             /* jarak dari sisi kiri layar */
+  top: 50%;               /* sejajarkan di tengah vertikal */
+  transform: translateY(-50%); /* agar betul-betul di tengah */
+  color: #fff;
+  font-size: 20px;
+  text-align: left;
+  z-index: 100;           /* pastikan di atas papan */
+}
+
+#leftPanel p {
+  margin: 0;
+}
+
+/* ====== Panel kanan: tombol & hasil di bawah ====== */
+#rightPanel {
+  position: absolute;
+  right: 30px;             /* jarak dari tepi kanan layar */
+  top: 50%;                /* posisi vertikal di tengah layar */
+  transform: translateY(-50%); /* benar-benar di tengah */
+  display: flex;
+  flex-direction: column;  /* susun vertikal (atas ke bawah) */
+  align-items: center;     /* rata tengah secara horizontal */
+  gap: 10px;               /* jarak antar elemen (dadu, tombol, teks) */
+  z-index: 100;
+}
+
+.dice-view {
+  position: relative;
+  top: 0;
+  right: 0;
+  transform: none;          /* hilangkan transformasi sebelumnya */
+}
+
+#rollDiceBtn {
+  font-size: 18px;
+  color: #fff;
+  background: rgba(255,255,255,0.15);
+  border: 2px solid #fff;
+  border-radius: 10px;
+  padding: 8px 16px;
+  cursor: pointer;
+  transition: transform 0.2s, background 0.2s;
+}
+#rollDiceBtn:hover {
+  transform: scale(1.05);
+  background: rgba(255,255,255,0.25);
+}
+
+/* Teks hasil dadu */
+#diceResult {
+  color: #fff;
+  font-size: 18px;
+  margin: 0;
+}
+
+/* ====== Tabel Hasil ====== */
+.result-table{
+  width: min(90vw, 520px);
+  border-collapse: collapse;
+  background: rgba(255,255,255,.9);
+  border-radius: 12px;
+  overflow: hidden;
+  margin: 8px 0 16px;
+}
+.result-table th, .result-table td{
+  padding: 10px 12px;
+  border-bottom: 1px solid #e5e5e5;
+  text-align: center;
+}
+.result-table thead th{
+  background: #222; color: #fff; font-weight: 700;
+}
+.result-actions{
+  display: flex; gap: 10px; justify-content: center;
+}
+.result-actions button{
+  background: #fff; color:#111; border:1px solid #ddd;
+  border-radius: 10px; padding: 10px 14px; cursor: pointer;
+  transition: transform .15s;
+}
+.result-actions button:hover{ transform: scale(1.04); }
