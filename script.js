@@ -5,6 +5,11 @@ let positions = {};
 let playerNames = {};
 let boardSize = 64; // 8x8
 let playerAvatars = {};
+let quizOrder = [];  // urutan soal acak
+let quizPtr = 0;     // penanda index soal yang sedang ditampilkan
+
+// === NEW: Stat per pemain ===
+let playerStats = {}; // { [idx]: {correct:0, wrong:0, points:0} }
 
 // ====== ATURAN ULAR & TANGGA ======
 const jumps = {
@@ -20,13 +25,6 @@ const jumps = {
   59: 45
 };
 
-// ====== SOAL KUIS ======
-const quizData = [
-  { question: "Ibukota Indonesia?", options: ["Jakarta", "Bali", "Surabaya"], answer: "Jakarta" },
-  { question: "2 + 2 = ?", options: ["3", "4", "5"], answer: "4" },
-  { question: "Warna bendera Indonesia?", options: ["Merah Putih", "Biru Putih", "Hijau Kuning"], answer: "Merah Putih" },
-];
-
 // ====== DICE ICON MAP (1–6) ======
 const DICE_ICONS = {
   1: "assets/d1.png",
@@ -36,7 +34,6 @@ const DICE_ICONS = {
   5: "assets/d5.png",
   6: "assets/d6.png",
 };
-
 
 // ====== AUDIO HELPERS ======
 function playSfxById(id, volume = 1) {
@@ -57,6 +54,14 @@ function startBgm(vol = 0.6) {
   } catch (_) {}
 }
 
+// ====== DICE ENABLE HELPER ======
+function setDiceEnabled(on) {
+  const btn = document.getElementById("rollDiceBtn");
+  if (!btn) return;
+  btn.disabled = !on;
+  btn.classList.toggle("disabled", !on); // untuk styling disabled di CSS (opsional)
+}
+
 // ====== NAVIGASI ======
 function showScreen(id) {
   document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
@@ -70,13 +75,10 @@ function goBack(button) {
 }
 
 // Mulai musik saat user pertama kali klik "Play"
-const playBtnEl = document.getElementById("playBtn");
-if (playBtnEl) {
-  playBtnEl.addEventListener("click", () => {
-    startBgm(0.6);
-    showScreen("menuMode");
-  });
-}
+document.getElementById("playBtn")?.addEventListener("click", () => {
+  startBgm(0.6);
+  showScreen("menuMode");
+});
 
 function selectMode(_) {
   showScreen("menuLawan");
@@ -101,21 +103,31 @@ function generatePlayerInputs(count) {
 }
 
 // Batasi 2–4 pemain
-const numPlayerInput = document.getElementById("playerCount");
-if (numPlayerInput) {
-  numPlayerInput.addEventListener("input", function () {
-    numPlayers = parseInt(this.value, 10);
-    if (isNaN(numPlayers)) numPlayers = 2;
-    if (numPlayers < 2) numPlayers = 2;
-    if (numPlayers > 4) numPlayers = 4;
-    this.value = String(numPlayers);
-    generatePlayerInputs(numPlayers);
-  });
-}
+document.getElementById("playerCount")?.addEventListener("input", function () {
+  numPlayers = parseInt(this.value, 10);
+  if (isNaN(numPlayers)) numPlayers = 2;
+  if (numPlayers < 2) numPlayers = 2;
+  if (numPlayers > 4) numPlayers = 4;
+  this.value = String(numPlayers);
+  generatePlayerInputs(numPlayers);
+});
 
 // ====== MULAI GAME ======
 function startGame() {
   startBgm(0.6);
+
+  // === VALIDASI NAMA PEMAIN (WAJIB TERISI) ===
+  const countInput = document.getElementById("playerCount");
+  numPlayers = Math.max(2, Math.min(4, parseInt(countInput?.value || "2", 10)));
+
+  for (let i = 1; i <= numPlayers; i++) {
+    const el = document.getElementById(`player${i}`);
+    if (!el || !el.value.trim()) {
+      alert(`Nama Pemain ${i} belum diisi.`);
+      el?.focus();
+      return;
+    }
+  }
 
   positions = {};
   playerNames = {};
@@ -134,6 +146,12 @@ function startGame() {
     playerAvatars[i] = defaultAvatars[(i - 1) % defaultAvatars.length];
   }
 
+  // === reset statistik
+  playerStats = {};
+  for (let i = 1; i <= numPlayers; i++) {
+    playerStats[i] = { correct: 0, wrong: 0, points: 0 };
+  }
+
   currentPlayer = 1;
   showScreen("gameBoard");
   renderBoard();
@@ -148,6 +166,15 @@ function startGame() {
   if (diceIcon) { diceIcon.src = DICE_ICONS[1] || ""; diceIcon.alt = "Hasil Dadu"; }
 
   setupBgmControls(); // hubungkan tombol & slider pojok kanan atas
+
+  // set urutan soal acak (soal, bukan opsi)
+  if (Array.isArray(window.quizBank) && window.quizBank.length) {
+    quizOrder = shuffle([...Array(window.quizBank.length).keys()]);
+    quizPtr = 0;
+  }
+
+  // dadu aktif saat baru mulai (belum ada soal terbuka)
+  setDiceEnabled(true);
 }
 
 // ====== RENDER PAPAN ======
@@ -164,8 +191,7 @@ function renderBoard() {
       const cell = document.createElement("div");
       cell.classList.add("cell");
       cell.id = `cell-${cellNumber}`;
-      // Kalau ingin tanpa angka: cell.innerText = "";
-      cell.innerText = cellNumber;
+      cell.innerText = cellNumber; // kalau tidak mau angka: kosongkan
       board.appendChild(cell);
     }
   }
@@ -202,8 +228,7 @@ function getCellXY(pos, offsetIndex = 0) {
   const centerX = c.left - b.left + c.width / 2;
   const centerY = c.top  - b.top  + c.height / 2;
 
-  // sesuaikan dengan ukuran pion (default CSS 40px → setengah = 20)
-  let x = centerX - 20;
+  let x = centerX - 20; // setengah pion ~20px
   let y = centerY - 20;
 
   // offset kecil biar tidak tumpuk (grid 2x2)
@@ -257,82 +282,193 @@ function applyJump(pos) {
 }
 
 // ====== DADU ======
-const rollBtn = document.getElementById("rollDiceBtn");
-if (rollBtn) {
-  rollBtn.addEventListener("click", () => {
-    playSfxById("sfxDice", 0.9);
+document.getElementById("rollDiceBtn")?.addEventListener("click", () => {
+  // Jangan jalan kalau tombol disabled
+  const rollBtn = document.getElementById("rollDiceBtn");
+  if (rollBtn?.disabled) return;
 
-    const dice = Math.floor(Math.random() * 6) + 1;
+  playSfxById("sfxDice", 0.9);
 
-    const diceText = document.getElementById("diceResult");
-    if (diceText) diceText.innerText = `Dadu: ${dice}`;
+  const dice = Math.floor(Math.random() * 6) + 1;
 
-    const diceIcon = document.getElementById("diceIcon");
-    if (diceIcon) {
-      diceIcon.classList.remove("spin");
-      void diceIcon.offsetWidth;
-      diceIcon.src = DICE_ICONS[dice] || "";
-      diceIcon.alt = `Dadu ${dice}`;
-      diceIcon.classList.add("spin");
-    }
+  const diceText = document.getElementById("diceResult");
+  if (diceText) diceText.innerText = `Dadu: ${dice}`;
 
-    let landed = positions[currentPlayer] + dice;
-    if (landed > boardSize) landed = boardSize;
-    positions[currentPlayer] = landed;
+  const diceIcon = document.getElementById("diceIcon");
+  if (diceIcon) {
+    diceIcon.classList.remove("spin");
+    void diceIcon.offsetWidth;
+    diceIcon.src = DICE_ICONS[dice] || "";
+    diceIcon.alt = `Dadu ${dice}`;
+    diceIcon.classList.add("spin");
+  }
 
-    animateMoveTo(currentPlayer, landed, () => {
-      const jumpedTo = jumps[landed];
-      if (jumpedTo !== undefined) {
-        positions[currentPlayer] = jumpedTo;
-        setTimeout(() => {
-          animateMoveTo(currentPlayer, jumpedTo, afterAllMoves);
-        }, 200);
-      } else {
-        afterAllMoves();
-      }
-    });
+  let landed = positions[currentPlayer] + dice;
+  if (landed > boardSize) landed = boardSize;
+  positions[currentPlayer] = landed;
 
-    function afterAllMoves() {
-      if (positions[currentPlayer] >= boardSize) {
-        setTimeout(() => {
-          alert(`${playerNames[currentPlayer]} menang!`);
-          showScreen("menuAwal");
-        }, 120);
-        return;
-      }
-      showQuiz();
+  animateMoveTo(currentPlayer, landed, () => {
+    const jumpedTo = jumps[landed];
+    if (jumpedTo !== undefined) {
+      positions[currentPlayer] = jumpedTo;
+      setTimeout(() => {
+        animateMoveTo(currentPlayer, jumpedTo, afterAllMoves);
+      }, 200);
+    } else {
+      afterAllMoves();
     }
   });
+
+  function afterAllMoves() {
+    if (positions[currentPlayer] >= boardSize) {
+      setTimeout(() => {
+        // Game selesai → tampilkan rekap hasil
+        showResults();
+      }, 120);
+      return;
+    }
+    // Kunci dadu sampai soal dijawab
+    setDiceEnabled(false);
+    showQuiz(); // kuis muncul setelah pion selesai bergerak
+  }
+});
+
+// ====== UTIL QUIZ ======
+const LABELS = ["A", "B", "C", "D", "E", "F"];
+function ensureLabeledOptions(options) {
+  if (!Array.isArray(options)) return [];
+  const already = options.every(o => /^[A-F]\s*[\.\)\-]\s*/i.test(String(o).trim()));
+  return already ? options.slice() : options.map((o, i) => `${LABELS[i] || ""}. ${o}`);
+}
+// acak array (Fisher–Yates)
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+function norm(s) {
+  return String(s || "").trim().replace(/^[A-F]\s*[\.\)\-]\s*/i, "").toLowerCase();
 }
 
 // ====== KUIS ======
+let _currentQuiz = null;
+
 function showQuiz() {
-  const quiz = quizData[Math.floor(Math.random() * quizData.length)];
-  document.getElementById("quizQuestion").innerText = quiz.question;
+  if (!Array.isArray(window.quizBank) || window.quizBank.length === 0) {
+    nextTurn();
+    return;
+  }
+
+  // ambil soal berdasarkan urutan acak (soal diacak, opsi TIDAK)
+  if (!Array.isArray(quizOrder) || quizOrder.length === 0 || quizPtr >= quizOrder.length) {
+    quizOrder = shuffle([...Array(window.quizBank.length).keys()]);
+    quizPtr = 0;
+  }
+  const qIndex = quizOrder[quizPtr++];
+  const q = window.quizBank[qIndex];
+
+  // urutan A/B/C/D tetap — tidak diacak
+  const labeledOptions = ensureLabeledOptions(q.options || []);
+  const answerLabeled  = ensureLabeledOptions([q.answer || ""])[0];
+
+  _currentQuiz = {
+    question: q.question,
+    options: labeledOptions,
+    answer: answerLabeled
+  };
+
+  const box = document.getElementById("quizBox");
+  const qEl = document.getElementById("quizQuestion");
   const optionsContainer = document.getElementById("quizOptions");
+  if (!box || !qEl || !optionsContainer) {
+    nextTurn();
+    return;
+  }
+
+  qEl.textContent = _currentQuiz.question;
   optionsContainer.innerHTML = "";
 
-  quiz.options.forEach(opt => {
+  _currentQuiz.options.forEach(opt => {
     const btn = document.createElement("button");
-    btn.innerText = opt;
+    btn.className = "quiz-option";
+    btn.textContent = opt;
+
+    // === Catat benar/salah + poin (tanpa popup)
     btn.onclick = () => {
+      const isCorrect = norm(opt) === norm(_currentQuiz.answer);
+      if (isCorrect) {
+        playerStats[currentPlayer].correct += 1;
+        playerStats[currentPlayer].points  += 10;
+      } else {
+        playerStats[currentPlayer].wrong   += 1;
+      }
       nextTurn();
     };
+
     optionsContainer.appendChild(btn);
   });
 
-  document.getElementById("quizBox").classList.remove("hidden");
+  box.classList.remove("hidden");
 }
 
 // ====== GILIRAN ======
 function nextTurn() {
-  document.getElementById("quizBox").classList.add("hidden");
+  document.getElementById("quizBox")?.classList.add("hidden");
+  _currentQuiz = null;
+
+  // Setelah menjawab soal → aktifkan dadu lagi
+  setDiceEnabled(true);
+
   currentPlayer++;
   if (currentPlayer > numPlayers) currentPlayer = 1;
   updateTurnInfo();
 }
 function updateTurnInfo() {
   document.getElementById("turnInfo").innerText = `Giliran: ${playerNames[currentPlayer]}`;
+}
+
+// ====== HASIL ======
+function showResults() {
+  const table = document.getElementById("resultTable");
+  const tbody = table?.querySelector("tbody");
+
+  if (table && tbody) {
+    // isi tabel
+    tbody.innerHTML = "";
+    for (let i = 1; i <= numPlayers; i++) {
+      const tr = document.createElement("tr");
+      const tdName   = document.createElement("td");
+      const tdRight  = document.createElement("td");
+      const tdWrong  = document.createElement("td");
+      const tdPoints = document.createElement("td");
+
+      tdName.textContent   = playerNames[i] || `Pemain ${i}`;
+      tdRight.textContent  = playerStats[i]?.correct ?? 0;
+      tdWrong.textContent  = playerStats[i]?.wrong ?? 0;
+      tdPoints.textContent = playerStats[i]?.points ?? 0;
+
+      tr.appendChild(tdName);
+      tr.appendChild(tdRight);
+      tr.appendChild(tdWrong);
+      tr.appendChild(tdPoints);
+      tbody.appendChild(tr);
+    }
+    showScreen("resultScreen");
+  } else {
+    // fallback kalau belum ada layar hasil di HTML
+    let msg = "Hasil Permainan:\n\n";
+    for (let i = 1; i <= numPlayers; i++) {
+      const c = playerStats[i]?.correct ?? 0;
+      const w = playerStats[i]?.wrong ?? 0;
+      const p = playerStats[i]?.points ?? 0;
+      msg += `${playerNames[i] || "Pemain " + i} → Benar: ${c}, Salah: ${w}, Poin: ${p}\n`;
+    }
+    alert(msg);
+    showScreen("menuAwal");
+  }
 }
 
 // ====== KONTROL BGM (pojok kanan atas, pakai IKON) ======
